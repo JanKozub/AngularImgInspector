@@ -1,0 +1,18 @@
+#img-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: red;
+  cursor: default;
+}
+
+#wrapper {
+  position: absolute;
+  background-color: aqua;
+  overflow: hidden;
+}
+
+#svg {
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+}
