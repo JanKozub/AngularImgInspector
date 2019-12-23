@@ -1,8 +1,9 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser';
+import {NgModule} from '@angular/core';
 
-import { AppComponent } from './app.component';
-import { ImgSliderComponent } from './img-slider/img-slider.component';
+import {AppComponent} from './app.component';
+import {ImgSliderComponent} from './img-slider/img-slider.component';
+import {ImageInspectorModule} from '../../projects/image-inspector/src/lib/image-inspector.module';
 
 @NgModule({
   declarations: [
@@ -10,7 +11,8 @@ import { ImgSliderComponent } from './img-slider/img-slider.component';
     ImgSliderComponent
   ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    ImageInspectorModule
   ],
   providers: [],
   bootstrap: [AppComponent]

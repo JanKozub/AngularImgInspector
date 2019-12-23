@@ -11,8 +11,3 @@
   background-color: aqua;
   overflow: hidden;
 }
-
-#svg {
-  -moz-user-select: none;
-  -webkit-user-drag: none;
-}

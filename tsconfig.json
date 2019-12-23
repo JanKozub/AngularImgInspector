@@ -17,7 +17,27 @@
     "lib": [
       "es2018",
       "dom"
-    ]
+    ],
+    "paths": {
+      "ratify": [
+        "dist/ratify"
+      ],
+      "ratify/*": [
+        "dist/ratify/*"
+      ],
+      "img-inspector": [
+        "dist/img-inspector"
+      ],
+      "img-inspector/*": [
+        "dist/img-inspector/*"
+      ],
+      "image-inspector": [
+        "dist/image-inspector"
+      ],
+      "image-inspector/*": [
+        "dist/image-inspector/*"
+      ]
+    }
   },
   "angularCompilerOptions": {
     "fullTemplateTypeCheck": true,
