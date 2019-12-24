@@ -1,7 +1,7 @@
 #wrapper {
   position: absolute;
-  background-color: aqua;
   overflow: hidden;
+  background-color: aqua;
 }
 
 :host::ng-deep img {

@@ -8,6 +8,8 @@ import * as $ from 'jquery';
 })
 export class ImageInspectorComponent implements OnInit {
 
+  currentX: number;
+
   @Input()
   wrapperW: number;
   @Input()
@@ -20,12 +22,19 @@ export class ImageInspectorComponent implements OnInit {
   overflowAnimationSpeed = 100;
 
   interval: number;
-  mouseX: number;
-  mouseY: number;
-  imgContainerX: number;
-  imgContainerY: number;
+  currentY: number;
+  imgX: number;
+  imgY: number;
 
   constructor() {
+  }
+
+  private static isDeviceMobile() {
+    return 'ontouchstart' in document.documentElement;
+  }
+
+  private static getPropNum(selector: string, prop: string) {
+    return +$(selector).css(prop).replace(/[^-\d.]/g, '');
   }
 
   ngOnInit() {
@@ -38,32 +47,32 @@ export class ImageInspectorComponent implements OnInit {
       width: this.wrapperW,
       height: this.wrapperH
     });
-
-    window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
-    window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
-    this.imgContainerX = this.getPropNum('img', 'left');
-    this.imgContainerY = this.getPropNum('img', 'top');
-
-    if (!(this.imgH > this.wrapperH)) {  // is Y axis available
-      this.imgContainerY = (this.wrapperH - this.imgH) / 2;
-      imgContainer.css('top', this.imgContainerY);
+    if (!ImageInspectorComponent.isDeviceMobile()) {
+      window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
+      window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
     }
+
+    this.imgX = ImageInspectorComponent.getPropNum('img', 'left');
+    this.imgY = ImageInspectorComponent.getPropNum('img', 'top');
+
+    this.imgY = (this.wrapperH - this.imgH) / 2;
+    this.imgX = (this.wrapperW - this.imgW) / 2;
+    imgContainer.css({
+      top: this.imgY,
+      left: this.imgX
+    });
 
     this.setPosition();
     this.checkOverflow();
   }
 
-  onMouseMoveUpdate(e) {
-    this.mouseX = e.pageX;
-    this.mouseY = e.pageY;
+  private onMouseMoveUpdate(e) {
+    this.currentX = e.pageX;
+    this.currentY = e.pageY;
   }
 
-  getPropNum(selector: string, prop: string) {
-    return +$(selector).css(prop).replace(/[^-\d.]/g, '');
-  }
-
-  checkOverflow() {
-    $(document).on('mouseleave mouseup', () => {
+  private checkOverflow() {
+    $(document).on('mouseleave mouseup touchend touchcancel', () => {
 
       this.checkOverflowX();
 
@@ -71,60 +80,76 @@ export class ImageInspectorComponent implements OnInit {
         this.checkOverflowY();
       }
 
-      $('img').animate({left: this.imgContainerX, top: this.imgContainerY}, this.overflowAnimationSpeed);
+      $('img').animate({left: this.imgX, top: this.imgY}, this.overflowAnimationSpeed);
 
-      window.clearInterval(this.interval);
+      clearInterval(this.interval);
     });
   }
 
-  checkOverflowX() {
+  private checkOverflowX() {
     const halfBoxW = (this.wrapperW / 2);
-    if (this.imgContainerX > (this.wrapperW - halfBoxW)) {
-      this.imgContainerX = (this.wrapperW - halfBoxW);
+    if (this.imgX > (this.wrapperW - halfBoxW)) {
+      this.imgX = (this.wrapperW - halfBoxW);
     }
-    if ((this.imgContainerX + this.imgW) < halfBoxW) {
-      this.imgContainerX = (this.imgW * -1) + halfBoxW;
+    if ((this.imgX + this.imgW) < halfBoxW) {
+      this.imgX = (this.imgW * -1) + halfBoxW;
     }
   }
 
-  checkOverflowY() {
+  private checkOverflowY() {
     const halfBoxH = (this.wrapperH / 2);
-    if (this.imgContainerY > this.wrapperH - halfBoxH) {
-      this.imgContainerY = (this.wrapperH - halfBoxH);
+    if (this.imgY > this.wrapperH - halfBoxH) {
+      this.imgY = (this.wrapperH - halfBoxH);
     }
-    if ((this.imgContainerY + this.imgH) < halfBoxH) {
-      this.imgContainerY = (this.imgH * -1) + halfBoxH;
+    if ((this.imgY + this.imgH) < halfBoxH) {
+      this.imgY = (this.imgH * -1) + halfBoxH;
     }
   }
 
-  setPosition() {
-    $('img').on('mousedown', () => {
-      const lastX = this.mouseX;
-      const lastY = this.mouseY;
-      const lastObjX = this.imgContainerX;
-      const lastObjY = this.imgContainerY;
-      let lastDistanceX = 0;
-      let lastDistanceY = 0;
-      this.interval = window.setInterval(() => {
-        const distanceToMoveX = this.mouseX - lastX;
-        if (distanceToMoveX !== lastDistanceX) {
-          lastDistanceX = distanceToMoveX;
-          this.imgContainerX = lastObjX + distanceToMoveX;
-        }
-        if ((this.imgH > this.wrapperH)) {
-          const distanceToMoveY = this.mouseY - lastY;
-          if (distanceToMoveY !== lastDistanceY) {
-            lastDistanceY = distanceToMoveY;
-            this.imgContainerY = lastObjY + distanceToMoveY;
-          }
-        } else {
-          this.imgContainerY = (this.wrapperH - this.imgH) / 2;
-        }
-        $('img').css({
-          left: this.imgContainerX,
-          top: this.imgContainerY
+  private setPosition() {
+    $('img').on('mousedown touchstart', (start) => {
+      let lastX;
+      let lastY;
+      const lastObjX = this.imgX;
+      const lastObjY = this.imgY;
+      if (ImageInspectorComponent.isDeviceMobile()) {
+        start.preventDefault();
+        const startTouches = start.touches[0];
+        lastX = startTouches.pageX;
+        lastY = startTouches.pageY;
+        $('img').on('touchmove', (e) => {
+          const touch = e.touches[0];
+          this.currentX = touch.pageX;
+          this.currentY = touch.pageY;
+
+          this.definePosition(lastX, lastY, lastObjX, lastObjY);
         });
-      }, 10);
+      } else {
+        lastX = this.currentX;
+        lastY = this.currentY;
+        this.interval = setInterval(() => {
+          this.definePosition(lastX, lastY, lastObjX, lastObjY);
+        }, 10);
+      }
+    });
+  }
+
+  private definePosition(lastX, lastY, lastObjX, lastObjY) {
+    const distanceToMoveX = this.currentX - lastX;
+    if (distanceToMoveX !== 0) {
+      this.imgX = lastObjX + distanceToMoveX;
+    }
+    if ((this.imgH > this.wrapperH)) {
+      const distanceToMoveY = this.currentY - lastY;
+      if (distanceToMoveY !== 0) {
+        this.imgY = lastObjY + distanceToMoveY;
+      }
+    } else {
+      this.imgY = (this.wrapperH - this.imgH) / 2;
+    }
+    $('img').css({
+      left: this.imgX,
+      top: this.imgY
     });
   }
 }
