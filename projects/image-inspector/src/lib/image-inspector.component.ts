@@ -29,7 +29,7 @@ export class ImageInspectorComponent implements OnInit {
   }
 
   ngOnInit() {
-    const imgContainer = $('#img-container');
+    const imgContainer = $('img');
     imgContainer.css({
       width: this.imgW,
       height: this.imgH
@@ -41,8 +41,8 @@ export class ImageInspectorComponent implements OnInit {
 
     window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
     window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
-    this.imgContainerX = this.getPropNum('#img-container', 'left');
-    this.imgContainerY = this.getPropNum('#img-container', 'top');
+    this.imgContainerX = this.getPropNum('img', 'left');
+    this.imgContainerY = this.getPropNum('img', 'top');
 
     if (!(this.imgH > this.wrapperH)) {  // is Y axis available
       this.imgContainerY = (this.wrapperH - this.imgH) / 2;
@@ -71,7 +71,7 @@ export class ImageInspectorComponent implements OnInit {
         this.checkOverflowY();
       }
 
-      $('#img-container').animate({left: this.imgContainerX, top: this.imgContainerY}, this.overflowAnimationSpeed);
+      $('img').animate({left: this.imgContainerX, top: this.imgContainerY}, this.overflowAnimationSpeed);
 
       window.clearInterval(this.interval);
     });
@@ -98,7 +98,7 @@ export class ImageInspectorComponent implements OnInit {
   }
 
   setPosition() {
-    $('#img-container').on('mousedown', () => {
+    $('img').on('mousedown', () => {
       const lastX = this.mouseX;
       const lastY = this.mouseY;
       const lastObjX = this.imgContainerX;
@@ -120,7 +120,7 @@ export class ImageInspectorComponent implements OnInit {
         } else {
           this.imgContainerY = (this.wrapperH - this.imgH) / 2;
         }
-        $('#img-container').css({
+        $('img').css({
           left: this.imgContainerX,
           top: this.imgContainerY
         });

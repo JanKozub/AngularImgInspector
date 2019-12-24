@@ -1,25 +1,13 @@
-svg {
-  user-select: none;
-  -webkit-user-drag: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-}
-
-#img-container {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background-color: red;
-  cursor: default;
-  user-drag: none;
-  user-select: none;
-  -webkit-user-drag: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-}
-
 #wrapper {
   position: absolute;
   background-color: aqua;
   overflow: hidden;
+}
+
+:host::ng-deep img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
 }
