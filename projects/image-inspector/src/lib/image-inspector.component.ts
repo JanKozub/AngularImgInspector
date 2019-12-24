@@ -8,23 +8,22 @@ import * as $ from 'jquery';
 })
 export class ImageInspectorComponent implements OnInit {
 
-  currentX: number;
+  @Input()
+  private wrapperW: number;
+  @Input()
+  private wrapperH: number;
+  @Input()
+  private imgW: number;
+  @Input()
+  private imgH: number;
+  @Input()
+  private overflowAnimationSpeed = 100;
 
-  @Input()
-  wrapperW: number;
-  @Input()
-  wrapperH: number;
-  @Input()
-  imgW: number;
-  @Input()
-  imgH: number;
-  @Input()
-  overflowAnimationSpeed = 100;
-
-  interval: number;
-  currentY: number;
-  imgX: number;
-  imgY: number;
+  private interval: number;
+  private currentY: number;
+  private currentX: number;
+  private imgX: number;
+  private imgY: number;
 
   constructor() {
   }
@@ -39,14 +38,13 @@ export class ImageInspectorComponent implements OnInit {
 
   ngOnInit() {
     const imgContainer = $('img');
-    imgContainer.css({
-      width: this.imgW,
-      height: this.imgH
-    });
-    $('#wrapper').css({
-      width: this.wrapperW,
-      height: this.wrapperH
-    });
+    imgContainer.width(this.imgW);
+    imgContainer.height(this.imgH);
+
+    const wrapper = $('#wrapper');
+    wrapper.width(this.wrapperW);
+    wrapper.height(this.wrapperH);
+
     if (!ImageInspectorComponent.isDeviceMobile()) {
       window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
       window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
@@ -57,6 +55,7 @@ export class ImageInspectorComponent implements OnInit {
 
     this.imgY = (this.wrapperH - this.imgH) / 2;
     this.imgX = (this.wrapperW - this.imgW) / 2;
+
     imgContainer.css({
       top: this.imgY,
       left: this.imgX
