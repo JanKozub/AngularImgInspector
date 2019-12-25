@@ -10,9 +10,9 @@ import 'hammerjs';
 export class ImageInspectorComponent implements OnInit {
 
   @Input()
-  private wrapperW: number;
+  private wrapperWidth: string;
   @Input()
-  private wrapperH: number;
+  private wrapperHeight: string;
   @Input()
   private imgW: number;
   @Input()
@@ -25,6 +25,8 @@ export class ImageInspectorComponent implements OnInit {
   private currentX: number;
   private imgX: number;
   private imgY: number;
+  private wrapperW: number;
+  private wrapperH: number;
   private hammer;
 
   constructor() {
@@ -47,8 +49,11 @@ export class ImageInspectorComponent implements OnInit {
     imgContainer.height(this.imgH);
 
     const wrapper = $('#wrapper');
-    wrapper.width(this.wrapperW);
-    wrapper.height(this.wrapperH);
+    wrapper.css('width', this.wrapperWidth);
+    wrapper.css('height', this.wrapperHeight);
+
+    this.wrapperW = wrapper.width();
+    this.wrapperH = wrapper.height();
 
     if (!ImageInspectorComponent.isDeviceMobile()) {
       window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
