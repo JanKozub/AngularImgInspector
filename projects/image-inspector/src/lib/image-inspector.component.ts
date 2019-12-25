@@ -1,5 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 import * as $ from 'jquery';
+import 'hammerjs';
 
 @Component({
   selector: 'angular-image-inspector',
@@ -24,6 +25,7 @@ export class ImageInspectorComponent implements OnInit {
   private currentX: number;
   private imgX: number;
   private imgY: number;
+  private hammer;
 
   constructor() {
   }
@@ -37,6 +39,9 @@ export class ImageInspectorComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.hammer = new Hammer(document.getElementById('wrapper'));
+    this.hammer.get('pinch').set({enable: true});
+
     const imgContainer = $('img');
     imgContainer.width(this.imgW);
     imgContainer.height(this.imgH);
@@ -63,11 +68,8 @@ export class ImageInspectorComponent implements OnInit {
 
     this.setPosition();
     this.checkOverflow();
-  }
-
-  private onMouseMoveUpdate(e) {
-    this.currentX = e.pageX;
-    this.currentY = e.pageY;
+    this.handleDoubleClick();
+    this.handlePinch();
   }
 
   private checkOverflow() {
@@ -149,6 +151,37 @@ export class ImageInspectorComponent implements OnInit {
     $('img').css({
       left: this.imgX,
       top: this.imgY
+    });
+  }
+
+  private onMouseMoveUpdate(e) {
+    this.currentX = e.pageX;
+    this.currentY = e.pageY;
+  }
+
+  private handleDoubleClick() {
+    let isZoomed = false;
+    this.hammer.on('doubletap', (ev) => {
+      if (!isZoomed) {
+        $('img').css('transform', 'scale(1.5)');
+      } else {
+        $('img').css('transform', 'scale(1)');
+      }
+      isZoomed = !isZoomed;
+    });
+  }
+
+  private handlePinch() {
+    this.hammer.on('pinch', (e) => {
+      if (e.scale > 0.8 && e.scale < 2) {
+        $('img').css('transform', 'scale(' + e.scale + ')');
+      }
+    });
+
+    this.hammer.on('pinchend', (e) => {
+      if (e.scale > 0.8 && e.scale < 2) {
+        $('img').css('transform', 'scale(' + e.scale + ')');
+      }
     });
   }
 }
