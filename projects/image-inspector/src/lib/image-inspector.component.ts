@@ -14,9 +14,9 @@ export class ImageInspectorComponent implements OnInit {
   @Input()
   private wrapperHeight: string;
   @Input()
-  private imgW: number;
+  private imgWidth: string;
   @Input()
-  private imgH: number;
+  private imgHeight: string;
   @Input()
   private overflowAnimationSpeed = 100;
 
@@ -27,6 +27,8 @@ export class ImageInspectorComponent implements OnInit {
   private imgY: number;
   private wrapperW: number;
   private wrapperH: number;
+  private imgW: number;
+  private imgH: number;
   private hammer;
 
   constructor() {
@@ -44,9 +46,12 @@ export class ImageInspectorComponent implements OnInit {
     this.hammer = new Hammer(document.getElementById('wrapper'));
     this.hammer.get('pinch').set({enable: true});
 
-    const imgContainer = $('img');
-    imgContainer.width(this.imgW);
-    imgContainer.height(this.imgH);
+    const img = $('img');
+    img.css('width', this.imgWidth);
+    img.css('height', this.imgHeight);
+
+    this.imgW = img.width();
+    this.imgH = img.height();
 
     const wrapper = $('#wrapper');
     wrapper.css('width', this.wrapperWidth);
@@ -66,7 +71,7 @@ export class ImageInspectorComponent implements OnInit {
     this.imgY = (this.wrapperH - this.imgH) / 2;
     this.imgX = (this.wrapperW - this.imgW) / 2;
 
-    imgContainer.css({
+    img.css({
       top: this.imgY,
       left: this.imgX
     });
@@ -166,7 +171,7 @@ export class ImageInspectorComponent implements OnInit {
 
   private handleDoubleClick() {
     let isZoomed = false;
-    this.hammer.on('doubletap', (ev) => {
+    this.hammer.on('doubletap', () => {
       if (!isZoomed) {
         $('img').css('transform', 'scale(1.5)');
       } else {
