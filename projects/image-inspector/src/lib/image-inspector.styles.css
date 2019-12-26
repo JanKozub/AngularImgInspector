@@ -12,7 +12,3 @@
   -webkit-user-select: none;
   transform: scale(1);
 }
-
-:host::ng-deep img.zoomIn {
-  transform: scale(1.5);
-}

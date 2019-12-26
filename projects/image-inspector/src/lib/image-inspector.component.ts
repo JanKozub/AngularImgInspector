@@ -1,5 +1,5 @@
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import * as $ from 'jquery';
+import $ from 'jquery';
 import 'hammerjs';
 import {ImageInspectorService} from './image-inspector.service';
 import {Subscription} from 'rxjs';
@@ -55,14 +55,6 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
       .subscribe((value) => this.imgH = value);
   }
 
-  private static isDeviceMobile() {
-    return 'ontouchstart' in document.documentElement;
-  }
-
-  private static getPropNum(selector: string, prop: string) {
-    return +$(selector).css(prop).replace(/[^-\d.]/g, '');
-  }
-
   ngOnInit() {
     const img = $('img');
 
@@ -84,7 +76,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
       this.wrapperW = wrapper.width();
       this.wrapperH = wrapper.height();
 
-      if (!ImageInspectorComponent.isDeviceMobile()) { // mouse position getter if not mobile
+      if (!this.isDeviceMobile()) { // mouse position getter if not mobile
         window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
         window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
       }
@@ -115,14 +107,14 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
 
       $('img').animate({left: this.imgX, top: this.imgY}, this.overflowAnimationSpeed);
 
-      if (!ImageInspectorComponent.isDeviceMobile()) { // if device is not mobile clear mouse hold interval
+      if (!this.isDeviceMobile()) { // if device is not mobile clear mouse hold interval
         clearInterval(this.interval);
       }
     });
   }
 
   private checkOverflowX() {
-    const wrapperX = ImageInspectorComponent.getPropNum('#wrapper', 'left');
+    const wrapperX = this.getPropNum('#wrapper', 'left');
 
     const halfWrapperX = (wrapperX + (this.wrapperW / 2));
     if ((this.imgX + this.imgW) < halfWrapperX) { // Overflow left
@@ -134,7 +126,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   }
 
   private checkOverflowY() {
-    const wrapperY = ImageInspectorComponent.getPropNum('#wrapper', 'top');
+    const wrapperY = this.getPropNum('#wrapper', 'top');
 
     const halfWrapperY = (wrapperY + (this.wrapperH / 2));
     if ((this.imgY + this.imgH) < halfWrapperY) { // Overflow top
@@ -149,7 +141,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     $('img').on('mousedown touchstart', (start) => {
       const lastObjX = this.imgX; // getting img X,Y
       const lastObjY = this.imgY;
-      if (ImageInspectorComponent.isDeviceMobile()) { // define touch type
+      if (this.isDeviceMobile()) { // define touch type
         start.preventDefault();
         const startTouches = start.touches[0];
         this.lastX = startTouches.pageX; // getting start X,Y
@@ -193,6 +185,15 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     this.currentX = e.pageX;
     this.currentY = e.pageY;
   }
+
+  private isDeviceMobile() {
+    return 'ontouchstart' in document.documentElement;
+  }
+
+  private getPropNum(selector: string, prop: string) {
+    return +$(selector).css(prop).replace(/[^-\d.]/g, '');
+  }
+
 
   private isYAvailable() {
     return this.imgH > this.wrapperH;
