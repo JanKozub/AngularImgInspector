@@ -1,13 +1,15 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import * as $ from 'jquery';
 import 'hammerjs';
+import {ImageInspectorService} from './image-inspector.service';
+import {Subscription} from 'rxjs';
 
 @Component({
   selector: 'angular-image-inspector',
   templateUrl: `image-inspector.template.html`,
   styleUrls: [`image-inspector.styles.css`]
 })
-export class ImageInspectorComponent implements OnInit {
+export class ImageInspectorComponent implements OnInit, OnDestroy {
 
   @Input()
   private wrapperWidth: string;
@@ -31,15 +33,26 @@ export class ImageInspectorComponent implements OnInit {
   private imgH: number;
   private lastX: number;
   private lastY: number;
-  private isZoomed = false;
+  isZoomed = false;
   private startW: number;
   private startH: number;
   private imgCenterX: number;
   private imgCenterY: number;
 
   private hammer;
+  private subscription: Subscription;
 
-  constructor() {
+  constructor(private imageInspectorService: ImageInspectorService) { // Listening for variables changes in service
+    this.subscription = imageInspectorService.isZoomedChange
+      .subscribe((value) => this.isZoomed = value);
+    this.subscription = imageInspectorService.imgXChange
+      .subscribe((value) => this.imgX = value);
+    this.subscription = imageInspectorService.imgYChange
+      .subscribe((value) => this.imgY = value);
+    this.subscription = imageInspectorService.imgWChange
+      .subscribe((value) => this.imgW = value);
+    this.subscription = imageInspectorService.imgHChange
+      .subscribe((value) => this.imgH = value);
   }
 
   private static isDeviceMobile() {
@@ -86,6 +99,8 @@ export class ImageInspectorComponent implements OnInit {
       this.setPosition(); // call on needed handlers
       this.checkOverflow();
       this.handleDoubleClick();
+      this.imageInspectorService.setValues(this.isZoomed, this.imgX, this.imgY, this.imgW,
+        this.imgH, this.startW, this.startH, this.imgCenterX, this.imgCenterY, this.scale);
     });
   }
 
@@ -170,28 +185,8 @@ export class ImageInspectorComponent implements OnInit {
     this.setImgXY();
   }
 
-  private handleDoubleClick() {
-    this.isZoomed = false;
-    this.hammer.on('doubletap', () => {
-      if (this.isZoomed) { // if zoomed return to default values
-        this.imgW = this.startW;
-        this.imgH = this.startH;
-        this.imgX = this.imgCenterX;
-        this.imgY = this.imgCenterY;
-      } else { // if not scale all values and animate
-        this.imgW = this.imgW * this.scale;
-        this.imgH = this.imgH * this.scale;
-        this.imgX = ((this.startW - this.imgW) / 2) + this.imgCenterX;
-        this.imgY = ((this.startH - this.imgH) / 2) + this.imgCenterY;
-      }
-      $('img').animate({
-        width: this.imgW,
-        height: this.imgH,
-        left: this.imgX,
-        top: this.imgY
-      }, 100);
-      this.isZoomed = !this.isZoomed;
-    });
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 
   private onMouseMoveUpdate(e) {
@@ -207,6 +202,13 @@ export class ImageInspectorComponent implements OnInit {
     $('img').css({
       top: this.imgY,
       left: this.imgX
+    });
+  }
+
+  private handleDoubleClick() {
+    this.isZoomed = false;
+    this.hammer.on('doubletap', () => {
+      this.imageInspectorService.setZoom();
     });
   }
 }

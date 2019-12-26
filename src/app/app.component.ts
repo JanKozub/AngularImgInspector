@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
+import {ImageInspectorService} from '../../projects/image-inspector/src/lib/image-inspector.service';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,11 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'sliderAngular';
+
+  constructor(private imageInspectorService: ImageInspectorService) {
+  }
+
+  setZoom() {
+    this.imageInspectorService.setZoom();
+  }
 }
