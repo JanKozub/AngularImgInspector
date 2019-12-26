@@ -14,11 +14,11 @@ export class ImageInspectorComponent implements OnInit {
   @Input()
   private wrapperHeight: string;
   @Input()
-  private imgWidth: string;
-  @Input()
-  private imgHeight: string;
+  private imgSize: string;
   @Input()
   private overflowAnimationSpeed = 100;
+  @Input()
+  private scale = 1.6;
 
   private interval: number;
   private currentY: number;
@@ -32,6 +32,10 @@ export class ImageInspectorComponent implements OnInit {
   private lastX: number;
   private lastY: number;
   private isZoomed = false;
+  private startW: number;
+  private startH: number;
+  private imgCenterX: number;
+  private imgCenterY: number;
 
   private hammer;
 
@@ -47,88 +51,93 @@ export class ImageInspectorComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.hammer = new Hammer(document.getElementById('wrapper'));
-    this.hammer.get('pinch').set({enable: true});
-
     const img = $('img');
-    img.css('width', this.imgWidth);
-    img.css('height', this.imgHeight);
 
-    this.imgW = img.width();
-    this.imgH = img.height();
+    img.on('load', () => { // if image is loaded call all functions
+      this.hammer = new Hammer(document.getElementById('wrapper'));
+      this.hammer.get('pinch').set({enable: true});
 
-    const wrapper = $('#wrapper');
-    wrapper.css('width', this.wrapperWidth);
-    wrapper.css('height', this.wrapperHeight);
+      img.css('width', this.imgSize); // set img size
 
-    this.wrapperW = wrapper.width();
-    this.wrapperH = wrapper.height();
+      this.imgW = img.width(); // get current width and height of elements
+      this.imgH = img.height();
+      this.startW = this.imgW;
+      this.startH = this.imgH;
 
-    if (!ImageInspectorComponent.isDeviceMobile()) {
-      window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
-      window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
-    }
+      const wrapper = $('#wrapper');
+      wrapper.css('width', this.wrapperWidth);
+      wrapper.css('height', this.wrapperHeight);
 
-    this.imgX = ImageInspectorComponent.getPropNum('img', 'left');
-    this.imgY = ImageInspectorComponent.getPropNum('img', 'top');
+      this.wrapperW = wrapper.width();
+      this.wrapperH = wrapper.height();
 
-    this.imgY = (this.wrapperH - this.imgH) / 2;
-    this.imgX = (this.wrapperW - this.imgW) / 2;
+      if (!ImageInspectorComponent.isDeviceMobile()) { // mouse position getter if not mobile
+        window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
+        window.addEventListener('mouseenter', (e) => this.onMouseMoveUpdate(e), false);
+      }
 
-    img.css({
-      top: this.imgY,
-      left: this.imgX
+      this.imgCenterX = (this.wrapperW - this.imgW) / 2; // center image
+      this.imgCenterY = (this.wrapperH - this.imgH) / 2;
+      this.imgX = this.imgCenterX;
+      this.imgY = this.imgCenterY;
+
+      this.setImgXY();
+
+      this.setPosition(); // call on needed handlers
+      this.checkOverflow();
+      this.handleDoubleClick();
     });
-
-    this.setPosition();
-    this.checkOverflow();
-    this.handleDoubleClick();
-    this.handlePinch();
   }
 
   private checkOverflow() {
-    $(document).on('mouseleave mouseup touchend touchcancel', () => {
+    $(document).on('mouseleave mouseup touchend touchcancel', () => { // On mouse/touch end
 
       this.checkOverflowX();
 
-      if (this.imgH > this.wrapperH) {
+      if (this.isYAvailable()) { // if Y is available?
         this.checkOverflowY();
       }
 
       $('img').animate({left: this.imgX, top: this.imgY}, this.overflowAnimationSpeed);
 
-      clearInterval(this.interval);
+      if (!ImageInspectorComponent.isDeviceMobile()) { // if device is not mobile clear mouse hold interval
+        clearInterval(this.interval);
+      }
     });
   }
 
   private checkOverflowX() {
-    const halfBoxW = (this.wrapperW / 2);
-    if (this.imgX > (this.wrapperW - halfBoxW)) {
-      this.imgX = (this.wrapperW - halfBoxW);
+    const wrapperX = ImageInspectorComponent.getPropNum('#wrapper', 'left');
+
+    const halfWrapperX = (wrapperX + (this.wrapperW / 2));
+    if ((this.imgX + this.imgW) < halfWrapperX) { // Overflow left
+      this.imgX = halfWrapperX - this.imgW;
     }
-    if ((this.imgX + this.imgW) < halfBoxW) {
-      this.imgX = (this.imgW * -1) + halfBoxW;
+    if (this.imgX > halfWrapperX) { // Overflow right
+      this.imgX = halfWrapperX;
     }
   }
 
   private checkOverflowY() {
-    const halfBoxH = (this.wrapperH / 2);
-    if (this.imgY > this.wrapperH - halfBoxH) {
-      this.imgY = (this.wrapperH - halfBoxH);
+    const wrapperY = ImageInspectorComponent.getPropNum('#wrapper', 'top');
+
+    const halfWrapperY = (wrapperY + (this.wrapperH / 2));
+    if ((this.imgY + this.imgH) < halfWrapperY) { // Overflow top
+      this.imgY = halfWrapperY - this.imgH;
     }
-    if ((this.imgY + this.imgH) < halfBoxH) {
-      this.imgY = (this.imgH * -1) + halfBoxH;
+    if (this.imgY > halfWrapperY) { // Overflow bottom
+      this.imgY = halfWrapperY;
     }
   }
 
   private setPosition() {
     $('img').on('mousedown touchstart', (start) => {
-      const lastObjX = this.imgX;
+      const lastObjX = this.imgX; // getting img X,Y
       const lastObjY = this.imgY;
-      if (ImageInspectorComponent.isDeviceMobile()) {
+      if (ImageInspectorComponent.isDeviceMobile()) { // define touch type
         start.preventDefault();
         const startTouches = start.touches[0];
-        this.lastX = startTouches.pageX;
+        this.lastX = startTouches.pageX; // getting start X,Y
         this.lastY = startTouches.pageY;
         $('img').on('touchmove', (e) => {
           const touch = e.touches[0];
@@ -138,9 +147,9 @@ export class ImageInspectorComponent implements OnInit {
           this.definePosition(lastObjX, lastObjY);
         });
       } else {
-        this.lastX = this.currentX;
+        this.lastX = this.currentX; // getting start X,Y
         this.lastY = this.currentY;
-        this.interval = setInterval(() => {
+        this.interval = setInterval(() => { // when holding mouse1
           this.definePosition(lastObjX, lastObjY);
         }, 10);
       }
@@ -150,17 +159,38 @@ export class ImageInspectorComponent implements OnInit {
   private definePosition(lastObjX: number, lastObjY: number) {
     const distanceToMoveX = this.currentX - this.lastX;
     if (distanceToMoveX !== 0) {
-      this.imgX = lastObjX + distanceToMoveX;
+      this.imgX = lastObjX + distanceToMoveX; // setting new X
     }
-    if ((this.imgH > this.wrapperH)) {
+    if (this.isYAvailable()) { // if Y available set new value
       const distanceToMoveY = this.currentY - this.lastY;
       if (distanceToMoveY !== 0) {
         this.imgY = lastObjY + distanceToMoveY;
       }
     }
-    $('img').css({
-      left: this.imgX,
-      top: this.imgY
+    this.setImgXY();
+  }
+
+  private handleDoubleClick() {
+    this.isZoomed = false;
+    this.hammer.on('doubletap', () => {
+      if (this.isZoomed) { // if zoomed return to default values
+        this.imgW = this.startW;
+        this.imgH = this.startH;
+        this.imgX = this.imgCenterX;
+        this.imgY = this.imgCenterY;
+      } else { // if not scale all values and animate
+        this.imgW = this.imgW * this.scale;
+        this.imgH = this.imgH * this.scale;
+        this.imgX = ((this.startW - this.imgW) / 2) + this.imgCenterX;
+        this.imgY = ((this.startH - this.imgH) / 2) + this.imgCenterY;
+      }
+      $('img').animate({
+        width: this.imgW,
+        height: this.imgH,
+        left: this.imgX,
+        top: this.imgY
+      }, 100);
+      this.isZoomed = !this.isZoomed;
     });
   }
 
@@ -169,30 +199,14 @@ export class ImageInspectorComponent implements OnInit {
     this.currentY = e.pageY;
   }
 
-  private handleDoubleClick() {
-    this.isZoomed = false;
-    this.hammer.on('doubletap', () => {
-      if (this.isZoomed) {
-        $('img').css('transform', 'scale(1)');
-      } else {
-        $('img').css('transform', 'scale(1.5)');
-      }
-      this.isZoomed = !this.isZoomed;
-    });
+  private isYAvailable() {
+    return this.imgH > this.wrapperH;
   }
 
-  private handlePinch() {
-    this.hammer.on('pinch', (e) => {
-      this.isZoomed = true;
-      if (e.scale > 0.8 && e.scale < 2) {
-        $('img').css('transform', 'scale(' + e.scale + ')');
-      }
-    });
-
-    this.hammer.on('pinchend', (e) => {
-      if (e.scale > 0.8 && e.scale < 2) {
-        $('img').css('transform', 'scale(' + e.scale + ')');
-      }
+  private setImgXY() {
+    $('img').css({
+      top: this.imgY,
+      left: this.imgX
     });
   }
 }
