@@ -1,5 +1,4 @@
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import $ from 'jquery';
 import 'hammerjs';
 import {ImageInspectorService} from './image-inspector.service';
 import {Subscription} from 'rxjs';
@@ -33,11 +32,13 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   private imgH: number;
   private lastX: number;
   private lastY: number;
-  isZoomed = false;
+  private isZoomed = false;
   private startW: number;
   private startH: number;
   private imgCenterX: number;
   private imgCenterY: number;
+
+  private imgSelector: HTMLImageElement;
 
   private hammer;
   private subscription: Subscription;
@@ -56,25 +57,25 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    const img = $('img');
+    this.imgSelector = document.getElementsByTagName('img').item(0);
 
-    img.on('load', () => { // if image is loaded call all functions
+    this.imgSelector.addEventListener('load', () => { // if image is loaded call all functions
       this.hammer = new Hammer(document.getElementById('wrapper'));
       this.hammer.get('pinch').set({enable: true});
 
-      img.css('width', this.imgSize); // set img size
+      this.imgSelector.style.width = this.imgSize; // set img size
 
-      this.imgW = img.width(); // get current width and height of elements
-      this.imgH = img.height();
+      this.imgW = +this.imgSelector.offsetWidth; // get current width and height of elements
+      this.imgH = +this.imgSelector.offsetHeight;
       this.startW = this.imgW;
       this.startH = this.imgH;
 
-      const wrapper = $('#wrapper');
-      wrapper.css('width', this.wrapperWidth);
-      wrapper.css('height', this.wrapperHeight);
+      const wrapper = document.getElementById('wrapper');
+      wrapper.style.width = this.wrapperWidth;
+      wrapper.style.height = this.wrapperHeight;
 
-      this.wrapperW = wrapper.width();
-      this.wrapperH = wrapper.height();
+      this.wrapperW = wrapper.offsetWidth;
+      this.wrapperH = wrapper.offsetHeight;
 
       if (!this.isDeviceMobile()) { // mouse position getter if not mobile
         window.addEventListener('mousemove', (e) => this.onMouseMoveUpdate(e), false);
@@ -88,8 +89,18 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
 
       this.setImgXY();
 
-      this.setPosition(); // call on needed handlers
-      this.checkOverflow();
+      // call on needed handlers
+      if (this.isDeviceMobile()) { // define touch type
+        this.imgSelector.addEventListener('touchstart', (start) => this.setPositionTouch(start), false);
+      } else {
+        this.imgSelector.addEventListener('mousedown', (start) => this.setPositionMouse(start), false);
+      }
+
+      document.getElementById('wrapper').addEventListener('mouseleave', () => this.checkOverflow(), false);
+      document.getElementById('wrapper').addEventListener('mouseup', () => this.checkOverflow(), false);
+      document.getElementById('wrapper').addEventListener('touchend', () => this.checkOverflow(), false);
+      document.getElementById('wrapper').addEventListener('touchcancel', () => this.checkOverflow(), false);
+
       this.handleDoubleClick();
       this.imageInspectorService.setValues(this.isZoomed, this.imgX, this.imgY, this.imgW,
         this.imgH, this.startW, this.startH, this.imgCenterX, this.imgCenterY, this.scale);
@@ -97,24 +108,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   }
 
   private checkOverflow() {
-    $(document).on('mouseleave mouseup touchend touchcancel', () => { // On mouse/touch end
-
-      this.checkOverflowX();
-
-      if (this.isYAvailable()) { // if Y is available?
-        this.checkOverflowY();
-      }
-
-      $('img').animate({left: this.imgX, top: this.imgY}, this.overflowAnimationSpeed);
-
-      if (!this.isDeviceMobile()) { // if device is not mobile clear mouse hold interval
-        clearInterval(this.interval);
-      }
-    });
-  }
-
-  private checkOverflowX() {
-    const wrapperX = this.getPropNum('#wrapper', 'left');
+    const wrapperX = +document.getElementById('wrapper').style.left.replace(/[^-\d.]/g, '');
 
     const halfWrapperX = (wrapperX + (this.wrapperW / 2));
     if ((this.imgX + this.imgW) < halfWrapperX) { // Overflow left
@@ -123,10 +117,21 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     if (this.imgX > halfWrapperX) { // Overflow right
       this.imgX = halfWrapperX;
     }
+
+    if (this.isYAvailable()) { // if Y is available?
+      this.checkOverflowY();
+    }
+
+    this.imgSelector.style.left = String(this.imgX) + 'px';
+    this.imgSelector.style.top = String(this.imgY) + 'px';
+
+    if (!this.isDeviceMobile()) { // if device is not mobile clear mouse hold interval
+      clearInterval(this.interval);
+    }
   }
 
   private checkOverflowY() {
-    const wrapperY = this.getPropNum('#wrapper', 'top');
+    const wrapperY = +document.getElementById('wrapper').style.top.replace(/[^-\d.]/g, '');
 
     const halfWrapperY = (wrapperY + (this.wrapperH / 2));
     if ((this.imgY + this.imgH) < halfWrapperY) { // Overflow top
@@ -137,30 +142,33 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private setPosition() {
-    $('img').on('mousedown touchstart', (start) => {
-      const lastObjX = this.imgX; // getting img X,Y
-      const lastObjY = this.imgY;
-      if (this.isDeviceMobile()) { // define touch type
-        start.preventDefault();
-        const startTouches = start.touches[0];
-        this.lastX = startTouches.pageX; // getting start X,Y
-        this.lastY = startTouches.pageY;
-        $('img').on('touchmove', (e) => {
-          const touch = e.touches[0];
-          this.currentX = touch.pageX;
-          this.currentY = touch.pageY;
+  private setPositionTouch(start: TouchEvent) {
+    const lastObjX = this.imgX; // getting img X,Y
+    const lastObjY = this.imgY;
 
-          this.definePosition(lastObjX, lastObjY);
-        });
-      } else {
-        this.lastX = this.currentX; // getting start X,Y
-        this.lastY = this.currentY;
-        this.interval = setInterval(() => { // when holding mouse1
-          this.definePosition(lastObjX, lastObjY);
-        }, 10);
-      }
+    start.preventDefault();
+    const startTouches = start.touches[0];
+    this.lastX = startTouches.pageX; // getting start X,Y
+    this.lastY = startTouches.pageY;
+    this.imgSelector.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      this.currentX = touch.pageX;
+      this.currentY = touch.pageY;
+
+      this.definePosition(lastObjX, lastObjY);
     });
+  }
+
+  private setPositionMouse(start: MouseEvent) {
+    const lastObjX = this.imgX; // getting img X,Y
+    const lastObjY = this.imgY;
+
+    this.lastX = this.currentX; // getting start X,Y
+    this.lastY = this.currentY;
+
+    this.interval = setInterval(() => { // when holding mouse1
+      this.definePosition(lastObjX, lastObjY);
+    }, 10);
   }
 
   private definePosition(lastObjX: number, lastObjY: number) {
@@ -181,6 +189,13 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
+  private handleDoubleClick() {
+    this.isZoomed = false;
+    this.hammer.on('doubletap', () => {
+      this.imageInspectorService.setZoom();
+    });
+  }
+
   private onMouseMoveUpdate(e) {
     this.currentX = e.pageX;
     this.currentY = e.pageY;
@@ -190,26 +205,12 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
     return 'ontouchstart' in document.documentElement;
   }
 
-  private getPropNum(selector: string, prop: string) {
-    return +$(selector).css(prop).replace(/[^-\d.]/g, '');
-  }
-
-
   private isYAvailable() {
     return this.imgH > this.wrapperH;
   }
 
   private setImgXY() {
-    $('img').css({
-      top: this.imgY,
-      left: this.imgX
-    });
-  }
-
-  private handleDoubleClick() {
-    this.isZoomed = false;
-    this.hammer.on('doubletap', () => {
-      this.imageInspectorService.setZoom();
-    });
+    this.imgSelector.style.top = String(this.imgY) + 'px';
+    this.imgSelector.style.left = String(this.imgX) + 'px';
   }
 }

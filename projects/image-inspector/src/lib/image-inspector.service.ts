@@ -1,5 +1,4 @@
 import {Injectable} from '@angular/core';
-import * as $ from 'jquery';
 import {Subject} from 'rxjs';
 
 @Injectable({
@@ -51,12 +50,13 @@ export class ImageInspectorService {
       this.imgX = ((this.startW - this.imgW) / 2) + this.imgCenterX;
       this.imgY = ((this.startH - this.imgH) / 2) + this.imgCenterY;
     }
-    $('img').animate({
-      width: this.imgW,
-      height: this.imgH,
-      left: this.imgX,
-      top: this.imgY
-    }, 100);
+
+    const selector = document.getElementsByTagName('img').item(0);
+    selector.style.width = this.imgW + 'px';
+    selector.style.height = this.imgH + 'px';
+    selector.style.left = this.imgX + 'px';
+    selector.style.top = this.imgY + 'px';
+
     this.isZoomed = !this.isZoomed;
     this.isZoomedChange.next(this.isZoomed); // Notifying component about values change
     this.imgWChange.next(this.imgW);
