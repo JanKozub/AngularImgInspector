@@ -20,6 +20,8 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   private overflowAnimationSpeed = 100;
   @Input()
   private scale = 1.6;
+  @Input()
+  private overflowRatio = 0.5;
 
   private interval: number;
   private currentY: number;
@@ -110,7 +112,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   private checkOverflow() {
     const wrapperX = +document.getElementById('wrapper').style.left.replace(/[^-\d.]/g, '');
 
-    const halfWrapperX = (wrapperX + (this.wrapperW / 2));
+    const halfWrapperX = (wrapperX + (this.wrapperW * this.overflowRatio));
     if ((this.imgX + this.imgW) < halfWrapperX) { // Overflow left
       this.imgX = halfWrapperX - this.imgW;
     }
@@ -133,7 +135,7 @@ export class ImageInspectorComponent implements OnInit, OnDestroy {
   private checkOverflowY() {
     const wrapperY = +document.getElementById('wrapper').style.top.replace(/[^-\d.]/g, '');
 
-    const halfWrapperY = (wrapperY + (this.wrapperH / 2));
+    const halfWrapperY = (wrapperY + (this.wrapperH * this.overflowRatio));
     if ((this.imgY + this.imgH) < halfWrapperY) { // Overflow top
       this.imgY = halfWrapperY - this.imgH;
     }
